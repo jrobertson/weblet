@@ -1,7 +1,8 @@
 Gem::Specification.new do |s|
   s.name = 'weblet'
-  s.version = '0.1.0'
-  s.summary = 'Intended for retrieving HTML templates from a convenient to use Hash-like object.'
+  s.version = '0.2.0'
+  s.summary = 'Intended for retrieving HTML templates from a ' +
+      'convenient to use Hash-like object.'
   s.authors = ['James Robertson']
   s.files = Dir['lib/weblet.rb']
   s.add_runtime_dependency('rexle', '~> 1.5', '>=1.5.10')
