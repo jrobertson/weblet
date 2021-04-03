@@ -12,11 +12,16 @@ class WebletBuilder
 
     @marker, @debug = marker, debug
     
+    s.strip!
+    
     # the default marker is the hash symbol (#) but the client can set their 
     # own marker by simply using their custom symbol in the 1st line of input
     @marker ||= s[0]
     
-    @a = build(scan(s.strip))
+    a = scan(s.strip)
+    puts 'a: ' + a.inspect if @debug
+    
+    @a = build(a)
     @a.unshift *['weblet', {}, '']
   
   end
@@ -38,21 +43,21 @@ class WebletBuilder
 
   def build(a)
 
+    puts 'a: ' + a.inspect if @debug
+    
     a.map do |x|
       
       puts 'x: ' + x.inspect if @debug
       
-      if x.is_a? String then
-        head, body = x.split("\n", 2)
+      if x[0].is_a? String then
+        
+        head, body = x[0].split("\n", 2)
         [:node, {id: head[/#{@marker}(\w+)/,1]}, '',['![', {}, body.strip]]
-      elsif x.length < 2
-        x.flatten!(1)
-        head, body = x.shift.split("\n", 2)
-        [:node, {id: head[/#{@marker}(\w+)/,1].rstrip}, '',['![', {}, body.rstrip, ]]
-      else
-        x.flatten!(1)
-        head, body = x.shift.split("\n", 2)
-        [:node, {id: head[/#{@marker}(\w+)/,1].rstrip}, body.rstrip, *build(x)]
+        
+      elsif x[0] and x[0].is_a? Array
+                
+        [:node, {id: x[0][0][/#{@marker}(\w+)/,1]}, '', *build(x[1..-1])]
+        
       end
       
     end
@@ -85,10 +90,10 @@ class Weblet
     @doc.root.xml pretty: true
   end
 
-  def render(*args)
+  def render(*args, b=@b)
     
     if args.first.is_a? String then
-      path = args.first.split('/',2).map(&:to_sym)
+      path = args.first.split('/').map(&:to_sym)
     else
       path = *args.flatten(1)
     end
@@ -100,7 +105,7 @@ class Weblet
       r = found.cdatas.join if found
     end
     
-    eval('%Q(' + r + ')', @b) if r
+    eval('%Q(' + r + ')', b) if r
 
   end
 
