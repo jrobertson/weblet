@@ -3,13 +3,18 @@
 # file: weblet.rb
 
 require 'rexle'
+require 'rxfhelper'
 
 
 class WebletBuilder
 
-  def initialize(s, marker: '#', debug: false)
+  def initialize(s, marker: nil, debug: false)
 
     @marker, @debug = marker, debug
+    
+    # the default marker is the hash symbol (#) but the client can set their 
+    # own marker by simply using their custom symbol in the 1st line of input
+    @marker ||= s[0]
     
     @a = build(scan(s.strip))
     @a.unshift *['weblet', {}, '']
@@ -58,12 +63,13 @@ end
 
 class Weblet
 
-  def initialize(raws, b, marker: '#', debug: false)
+  def initialize(raws, b, marker: nil, debug: false)
     
     @debug = debug
+    
+    s, _ = RXFHelper.read(raws.strip)
 
-    raws.strip!
-    obj = raws[0] == '<' ? raws : WebletBuilder.new(raws, marker: marker, \
+    obj = s[0] == '<' ? s : WebletBuilder.new(s, marker: marker, \
                                                     debug: debug).to_a
     @doc = Rexle.new(obj)
     @h = scan @doc.root
