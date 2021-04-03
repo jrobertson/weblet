@@ -7,9 +7,10 @@ require 'rexle'
 
 class WebletBuilder
 
-  def initialize(s, debug: false)
+  def initialize(s, marker: '#', debug: false)
 
-    @debug = debug
+    @marker, @debug = marker, debug
+    
     @a = build(scan(s.strip))
     @a.unshift *['weblet', {}, '']
   
@@ -23,7 +24,7 @@ class WebletBuilder
 
   def scan(s, indent=0)
 
-    a = s.split(/(?=^#{'  ' * indent}#)/)
+    a = s.split(/(?=^#{('  ' * indent) + @marker})/)
     return a unless a.length > 1
 
     a.map {|x| scan(x, indent+1)}
@@ -38,15 +39,15 @@ class WebletBuilder
       
       if x.is_a? String then
         head, body = x.split("\n", 2)
-        [:node, {id: head[/#(\w+)/,1]}, '',['![', {}, body.strip]]
+        [:node, {id: head[/#{@marker}(\w+)/,1]}, '',['![', {}, body.strip]]
       elsif x.length < 2
         x.flatten!(1)
         head, body = x.shift.split("\n", 2)
-        [:node, {id: head[/#(\w+)/,1].rstrip}, '',['![', {}, body.rstrip, ]]
+        [:node, {id: head[/#{@marker}(\w+)/,1].rstrip}, '',['![', {}, body.rstrip, ]]
       else
         x.flatten!(1)
         head, body = x.shift.split("\n", 2)
-        [:node, {id: head[/#(\w+)/,1].rstrip}, body.rstrip, *build(x)]
+        [:node, {id: head[/#{@marker}(\w+)/,1].rstrip}, body.rstrip, *build(x)]
       end
       
     end
@@ -57,12 +58,13 @@ end
 
 class Weblet
 
-  def initialize(raws, b, debug: false)
+  def initialize(raws, b, marker: '#', debug: false)
     
     @debug = debug
 
     raws.strip!
-    obj = raws[0] == '<' ? raws : WebletBuilder.new(raws, debug: debug).to_a
+    obj = raws[0] == '<' ? raws : WebletBuilder.new(raws, marker: marker, \
+                                                    debug: debug).to_a
     @doc = Rexle.new(obj)
     @h = scan @doc.root
     @b = b
