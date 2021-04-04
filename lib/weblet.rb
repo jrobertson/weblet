@@ -56,7 +56,9 @@ class WebletBuilder
         
       elsif x[0] and x[0].is_a? Array
                 
-        [:node, {id: x[0][0][/#{@marker}(\w+)/,1]}, '', *build(x[1..-1])]
+        head, body = x[0][0].split("\n", 2)
+        [:node, {id: head[/#{@marker}(\w+)/,1]}, '', \
+         ['![', {}, body.to_s.strip], *build(x[1..-1])]
         
       end
       
@@ -90,7 +92,9 @@ class Weblet
     @doc.root.xml pretty: true
   end
 
-  def render(*args, b=@b)
+  def render(*args)
+    
+    @b = args.pop if args.last.is_a? Binding
     
     if args.first.is_a? String then
       path = args.first.split('/').map(&:to_sym)
@@ -98,18 +102,35 @@ class Weblet
       path = *args.flatten(1)
     end
 
-    r = @h.dig *path
+    #r = @h.dig *path
+    r = digx(@h, path)
+    
+    puts 'r: ' + r.inspect if @debug
     
     if r.nil? then
       found = @doc.root.element("//node[@id='#{path.join}']")
       r = found.cdatas.join if found
     end
     
-    eval('%Q(' + r + ')', b) if r
+    eval('%Q(' + r + ')', @b) if r
 
   end
 
   private
+  
+  def digx(obj, a)
+
+    h = obj.is_a?(Array) ? obj.last : obj
+
+    r = h.dig(a.shift)
+
+    if a.any? then
+      digx(r, a)
+    else
+      r.is_a?(Array) ? r.first : r
+    end
+
+  end  
 
   def scan(node)
 
@@ -121,7 +142,14 @@ class Weblet
       
       puts 'nodes: ' + nodes.inspect if @debug
       
-      r = nodes.any? ? scan(e) : e.cdatas.join()
+      r = if nodes.any? then
+      
+        r2 = scan(e)
+        e.cdatas.any? ? [e.cdatas.join(), r2] : r2
+        
+      else
+        e.cdatas.join()
+      end
 
       [e.attributes[:id].to_sym, r]
       
