@@ -105,6 +105,9 @@ class Weblet
     #r = @h.dig *path
     r = digx(@h, path)
     
+    # check for interpolated substitution tags e.g/ <:card/svg/link>
+    r.gsub!(/<:([^>]+)>/) {|x| self.render($1) }
+    
     puts 'r: ' + r.inspect if @debug
     
     if r.nil? then
