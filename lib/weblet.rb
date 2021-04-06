@@ -70,7 +70,7 @@ end
 
 class Weblet
 
-  def initialize(raws, b, marker: nil, debug: false)
+  def initialize(raws, marker: nil, debug: false)
     
     @debug = debug
     
@@ -80,12 +80,15 @@ class Weblet
                                                     debug: debug).to_a
     @doc = Rexle.new(obj)
     @h = scan @doc.root
-    @b = b
 
   end
 
   def to_h()
     @h
+  end
+  
+  def to_outline()
+    treeize(scan_h(@h))
   end
   
   def to_xml()
@@ -94,7 +97,7 @@ class Weblet
 
   def render(*args)
     
-    @b = args.pop if args.last.is_a? Binding
+    b = args.pop if args.last.is_a? Binding
     
     if args.first.is_a? String then
       path = args.first.split('/').map(&:to_sym)
@@ -115,7 +118,7 @@ class Weblet
       r = found.cdatas.join if found
     end
     
-    eval('%Q(' + r + ')', @b) if r
+    eval('%Q(' + r + ')', b) if r
 
   end
 
@@ -159,4 +162,29 @@ class Weblet
     end.to_h
     
   end
+  
+  def scan_h(h)
+
+    a = h.map do |key, value|
+      value.is_a?(Array) ? [key, scan_h(value.last)] : [key]
+    end
+
+  end
+  
+  def treeize(a, indent=-2)
+
+    indent += 1
+    a.map  do |x|
+
+      if x.is_a? Symbol then
+        (' ' * indent) + x.to_s
+      else
+        treeize(x, indent)
+      end
+
+    end.join("\n")
+
+  end
+  
+  
 end
