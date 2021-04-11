@@ -49,9 +49,21 @@ class WebletBuilder
       
       puts 'x: ' + x.inspect if @debug
       
-      if x[0].is_a? String then
+      if x.is_a? String then
+        
+        head, body = x.split("\n", 2)
+        puts 'head: ' + head.inspect if @debug
+        puts 'body: ' + body.inspect if @debug
+        puts 'marker: ' + @marker.inspect if @debug
+        
+        [:node, {id: head[/#{@marker}(\w+)/,1]}, '',['![', {}, body.strip]]
+        
+      elsif x[0].is_a? String 
         
         head, body = x[0].split("\n", 2)
+        puts 'body: ' + body.inspect if @debug
+        puts 'marker: ' + @marker.inspect if @debug
+        
         [:node, {id: head[/#{@marker}(\w+)/,1]}, '',['![', {}, body.strip]]
         
       elsif x[0] and x[0].is_a? Array
@@ -78,6 +90,7 @@ class Weblet
 
     obj = s[0] == '<' ? s : WebletBuilder.new(s, marker: marker, \
                                                     debug: debug).to_a
+    puts 'obj: ' + obj.inspect if @debug
     @doc = Rexle.new(obj)
     @h = scan @doc.root
 

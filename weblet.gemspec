@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'weblet'
-  s.version = '0.3.4'
+  s.version = '0.3.5'
   s.summary = 'Intended for retrieving HTML templates from a ' +
       'convenient to use Hash-like object.'
   s.authors = ['James Robertson']
