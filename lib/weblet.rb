@@ -93,11 +93,25 @@ class Weblet
     puts 'obj: ' + obj.inspect if @debug
     @doc = Rexle.new(obj)
     @h = scan @doc.root
+    @kvp = scan2keypair(@h).to_h
 
+  end
+
+  def [](key)
+    @kvp[key.to_s]
+  end
+
+  def []=(key, value)
+    @kvp[key.to_s] = value
   end
 
   def to_h()
     @h
+  end
+
+  # key-value pair
+  def to_kvp()
+    @kvp
   end
 
   def to_outline()
@@ -108,58 +122,25 @@ class Weblet
     @doc.root.xml pretty: true
   end
 
-  def render(*args)
+  def render(rawkey, bindingx=nil)
 
-    b = args.pop if args.last.is_a? Binding
-
-    if args.first.is_a? String then
-      path = args.first.split('/').map(&:to_sym)
-    else
-      path = *args.flatten(1)
-    end
-
-    #r = @h.dig *path
-    r = digx(@h, path)
+    key = rawkey.to_s
+    return unless @kvp.has_key?(key)
 
     # check for interpolated substitution tags e.g/ <:card/svg/link>
-    r.gsub!(/<:([^>]+)>/) {|x| self.render($1) } if r
+    r = @kvp[key].gsub(/<:([^>]+)>/) {|x| self.render($1) }
 
-    puts 'r: ' + r.inspect if @debug
-
-    if r.nil? then
-      found = @doc.root.element("//node[@id='#{path.join}']")
-      r = found.cdatas.join if found
-    end
-
-    eval('%Q(' + r + ')', b) if r
+    eval('%Q(' + r + ')', bindingx)
 
   end
 
   private
 
-  def digx(obj, a)
-
-    h = obj.is_a?(Array) ? obj.last : obj
-
-    r = h.dig(a.shift)
-
-    if a.any? then
-      digx(r, a)
-    else
-      r.is_a?(Array) ? r.first : r
-    end
-
-  end
-
   def scan(node)
 
     a = node.elements.map do |e|
 
-      puts 'e: ' + e.inspect if @debug
-
       nodes = e.xpath('node')
-
-      puts 'nodes: ' + nodes.inspect if @debug
 
       r = if nodes.any? then
 
@@ -199,5 +180,32 @@ class Weblet
 
   end
 
+  def scan2keypair(h, trail=nil)
+
+    h.inject([]) do |r,x|
+
+      if x.last.is_a? String then
+
+        key, val = x
+
+        new_key = if r.last and r.last.first.length > 0 then
+          key.to_s
+        else
+          key.to_s
+        end
+
+        r << [[trail, new_key].compact.join('/'), val]
+
+      else
+
+        new_key = x.first.to_s
+        r << [new_key, x.last.first]
+        r.concat scan2keypair(x.last.last, [trail, new_key].compact.join('/'))
+
+      end
+
+    end
+
+  end
 
 end
